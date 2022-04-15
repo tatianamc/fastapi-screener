@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h1>FastAPI Stock Screener</h1>
+    <p>This is a stock screener that displays useful fundamental and price data for stocks in the SP500.</p>
+    <p>Users can filter stocks based on a number of attributes, and view graphical price data.</p>
+    <p><strong>Note:</strong> stock/price data is not updated regularly. This project is 
+        meant for demonstration and educational purposes only. See <a href="">license</a>.</p>
+    <p>Technologies used:</p>
+    <ul>
+        <li>Databse built with PostgreSQL with SQLAlchemy ORMs and Alembic for migrations.</li>
+        <li>Initial market data stored with the yfinance module.</li>
+        <li>FastAPI for screener API and automatic documentation.</li>
+        <li>Frontend UI built with Bootstrap 5, AlpineJS, Axios, and Jinja2 templates.</li>
+        <li>Price charts done with Google Visualisations.</li>
+        <li>Deployed on Heroku.</li>
+    </ul>
+    <p>Find the source code on <a href="#">Github</a>.</p>
+</div>
+{% endblock%}

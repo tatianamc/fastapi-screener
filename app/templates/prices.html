@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Price chart: {{ stock.symbol }}</h1>
+    <h2><small class="text-muted">{{ stock.name }}</small></h2>
+        <div id="chart_div" style="width: 100%; height: 500px;"></div>
+    <div class="section">
+        <p>{{ stock.long_summary }}</p>
+        <p><strong>Note:</strong> stock/price data is not updated regularly. This project is 
+            meant for demonstration and educational purposes only. See <a href="">license</a>.</p>
+    </div>
+
+</div>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+google.charts.load('current', {'packages':['corechart']})
+google.charts.setOnLoadCallback(drawChart)
+
+function drawChart() {
+    axios.get('/prices/{{ stock.symbol }}').then(response => { 
+        let priceData = response.data 
+        let chartData = []
+        for (let i = 0; i < priceData.length; i++) {
+            chartData.push([
+                priceData[i]['price_date'].split('T')[0],
+                priceData[i]['low'],
+                priceData[i]['open'],
+                priceData[i]['close'],
+                priceData[i]['high']
+            ])
+        }
+
+        const data = google.visualization.arrayToDataTable(chartData, true)
+        const options = {
+            legend: 'none',
+            seriesType: 'candlesticks',
+            // backgroundColor: {
+            //     fill: '#333333', 
+            //     stroke: '#222222',
+            //     strokeWidth: 4
+            // },
+            candlestick: {
+                fallingColor: {strokeWidth: 0, fill: '#a52714'}, // red
+                risingColor: {strokeWidth: 0, fill: '#0f9d58'}   // green
+            },
+        }
+        const chart = new google.visualization.CandlestickChart(document.getElementById('chart_div'))
+
+        // Fix longstanding issue where candlestick high-low bars can't be coloured. See:
+        // https://github.com/google/google-visualization-issues/issues/1014
+        const onReady = function () {
+            const chartElement = document.getElementById('chart_div')
+            const fallingCandles = chartElement.querySelectorAll('rect[fill="#a52714"]')
+            fallingCandles.forEach(function (e) {
+                e.previousSibling.style.fill = '#a52714'
+            })
+            const risingCandles = chartElement.querySelectorAll('rect[fill="#0f9d58"]')
+            risingCandles.forEach(function (e) {
+                e.previousSibling.style.fill = '#0f9d58'
+            })
+        }
+        google.visualization.events.addListener(chart, 'ready', onReady)
+        chart.draw(data, options)
+        window.onresize = () => { chart.draw(data, options) }
+        
+    })
+}
+</script>
+{% endblock%}
