@@ -3,7 +3,7 @@ This is a stock screener that displays useful fundamental and price data for sto
 
 Users can filter stocks based on a number of attributes, and view graphical price data.
 
-**NOTE:** stock/price data is not updated regularly. This project is meant for demonstration and educational purposes only. See [license]().
+**NOTE:** stock/price data is not updated regularly. This project is meant for demonstration and educational purposes only. See [license](https://github.com/nbrownlee/fastapi-screener/blob/main/LICENSE).
 
 Technologies used:
  - Databse built with PostgreSQL with SQLAlchemy ORMs and Alembic for migrations.
