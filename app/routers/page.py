@@ -59,8 +59,7 @@ def screener_filter(request: Request, filter_data: schemas.FilterIn, db: Session
     else:
         stocks = stocks.order_by(getattr(models.Stock, sql_col_names[filter_data.sort.column]).desc())
     
-    # Offset by limit and skip parameters
-    stocks = stocks.limit(filter_data.limit).offset(filter_data.skip).all()
+    stocks = stocks.all()
     
     if not stocks:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

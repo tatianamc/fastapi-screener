@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
-<div x-data="stockAPI()" x-init="axios.get('/stocks').then(response => { stocks = response.data })" class="container">
+<div x-data="stockAPI()" x-init="axios.get('/stocks?limit=510').then(res => { allStocks = res.data })" class="container">
     <div class="p-2 border">
         <p>
-            <strong>Click to add filters to selected stocks</strong>
+            <strong>Click 'edit' to add filters to selected stocks</strong>
         </p>
         <div class="row my-3 g-3 collapse small" id="collapseFilterMenu">
             <div class="col-12" id="endFilterMenu">
@@ -40,14 +40,14 @@
     <div class="mt-3 table-responsive">
         <table class="table table-hover table-striped table-bordered">
             <thead>
-                <tr><th @click="sortByCol">Symbol</th>
-                    <th @click="sortByCol">Name</th>
-                    <th @click="sortByCol">Price</th>
-                    <th @click="sortByCol">Market cap</th>
-                    <th @click="sortByCol">P/E ratio</th>
+                <tr><th @click="sortByCol(0)">Symbol</th>
+                    <th @click="sortByCol(1)">Name</th>
+                    <th @click="sortByCol(2)">Price</th>
+                    <th @click="sortByCol(3)">Market cap</th>
+                    <th @click="sortByCol(4)">P/E ratio</th>
                 </tr>
             </thead><tbody>
-                <template x-for="stock in stocks" :key="stock.symbol">
+                <template x-for="stock in allStocks.slice(skip, skip + limit)" :key="stock.symbol">
                     <tr>
                         <td>
                             <strong>
@@ -82,12 +82,9 @@ function stockAPI() {
         limit: 25,
         operators: ["Greater than", "Equal to", "Less than"],
         skip: 0,
-        sort: {
-            "direction": "ASC",
-            "column": 0
-        },
-        stocks: [],
-        
+        sort: { "direction": "DESC", "column": 0 },
+        allStocks: [],
+
         addFilter: function (name) {
             this.filters.push({
                 "filter": name,
@@ -97,7 +94,6 @@ function stockAPI() {
         },
 
         displayMC: function (marketCap) {
-            // 583596834816 - 583.59
             if (marketCap.toString().length > 9) {
                 marketCap = marketCap / 1000000000
                 return marketCap.toString().slice(0, -7) + 'B'
@@ -107,21 +103,15 @@ function stockAPI() {
 
         getPage: function (page) {
             // Handle pagination of data
-            if (page === -1) {
-                if (this.skip > 0)
-                    this.skip -= 25
-            } else {
-                if (this.stocks.length >= 25)
-                    this.skip += 25
-            }
-            this.getStocks()
+            if (page === -1 && this.skip > 0)
+                this.skip -= this.limit
+            else if (page === 1 && this.limit + this.skip < this.allStocks.length)
+                this.skip += this.limit
         },
 
         getStocks: async function(resetPage) {
             // resetPage - return pagination to 0 to avoid empty pages
-            if (resetPage) {
-                this.skip = 0
-            }
+            if (resetPage) this.skip = 0
             // Replace "B" in Market cap filter with correct n of zeroes
             for (const filter of this.filters) {
                 if (filter.filter === "Market cap") {
@@ -131,25 +121,49 @@ function stockAPI() {
                     }
                 }
             }
+
             const response = await axios.post("/", {
                 "filters": this.filters,
-                "sort": this.sort,
-                "limit": this.limit,
-                "skip": this.skip
+                "sort": this.sort
             })
-            const data = response.data
-            this.stocks = data.stocks
+            this.allStocks = response.data.stocks
         },
 
-        sortByCol($event) {
-            const index = [...$event.target.parentElement.children].indexOf($event.target)
-            if (this.sort['column'] == index) {
+        sortBy(field, reverse, primer) {
+            // Reusable sort function for table columns
+            const key = primer ?
+                function(x) {
+                    return primer(x[field])
+                } :
+                function(x) {
+                    return x[field]
+                }
+
+            reverse = !reverse ? 1 : -1
+            return function(a, b) {
+                return a = key(a), b = key(b), reverse * ((a > b) - (b > a))
+            }
+        },
+
+        sortByCol(col) {
+            if (this.sort['column'] == col) {
                 this.sort['direction'] = this.sort['direction'] == "ASC" ? "DESC" : "ASC"
             } else {
-                this.sort['column'] = index
-                this.sort['direction'] = "ASC"
+                this.sort['column'] = col
+                this.sort['direction'] = "DESC"
             }
-            this.getStocks()
+
+            const reverse = this.sort['direction'] == "DESC"
+            if (col == 0)
+                this.allStocks.sort(this.sortBy('symbol', reverse, (a) =>  a.toUpperCase()))
+            if (col == 1)
+                this.allStocks.sort(this.sortBy('name', reverse, (a) =>  a.toUpperCase()))
+            if (col == 2)
+                this.allStocks.sort(this.sortBy('price', reverse, parseFloat))
+            if (col == 3)
+                this.allStocks.sort(this.sortBy('market_cap', reverse, parseInt))
+            if (col == 4)
+                this.allStocks.sort(this.sortBy('pe_ratio', reverse, parseInt))
         }
     };
 }

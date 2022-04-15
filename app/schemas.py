@@ -43,8 +43,6 @@ class FilterSortIn(BaseModel):
 
 class FilterIn(BaseModel):
     filters: List[FilterGroupIn] | None = None
-    limit: int = 25
-    skip: int = 0
     sort: FilterSortIn
 
 
