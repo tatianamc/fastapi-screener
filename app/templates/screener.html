@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-<div x-data="stockAPI()" x-init="axios.get('/stocks?limit=510').then(res => { allStocks = res.data })" class="container">
+<div x-data="stockAPI()" x-init="axios.get('/stocks?limit=510').then(res => { allStocks = res.data; });" class="container">
     <div class="p-2 border">
         <p>
             <strong>Click 'edit' to add filters to selected stocks</strong>
@@ -29,7 +29,7 @@
                 </div>
             </template>
         </div>
-        <div class="col-12">        
+        <div class="col-12">
             <a class="btn btn-outline-primary" data-bs-toggle="collapse" href="#collapseFilterMenu" role="button" aria-expanded="false" aria-controls="collapseFilterMenu">
                 Edit Filters
             </a>
@@ -82,7 +82,7 @@ function stockAPI() {
         limit: 25,
         operators: ["Greater than", "Equal to", "Less than"],
         skip: 0,
-        sort: { "direction": "DESC", "column": 0 },
+        sort: { "direction": -1, "column": 0 },
         allStocks: [],
 
         addFilter: function (name) {
@@ -130,6 +130,7 @@ function stockAPI() {
         },
 
         sortBy(field, reverse, primer) {
+            console.log("sortBy", reverse, this.sort['column'], this.sort['direction'])
             // Reusable sort function for table columns
             const key = primer ?
                 function(x) {
@@ -140,32 +141,36 @@ function stockAPI() {
                 }
 
             reverse = !reverse ? 1 : -1
+            console.log("sortBy", reverse, this.sort['column'], this.sort['direction'])
             return function(a, b) {
                 return a = key(a), b = key(b), reverse * ((a > b) - (b > a))
             }
         },
 
         sortByCol(col) {
+            console.log("sortByCol", col, this.sort['column'], this.sort['direction'])
             if (this.sort['column'] == col) {
-                this.sort['direction'] = this.sort['direction'] == "ASC" ? "DESC" : "ASC"
+                this.sort['direction'] = this.sort['direction'] == 1 ? -1 : 1
             } else {
                 this.sort['column'] = col
-                this.sort['direction'] = "DESC"
+                this.sort['direction'] = -1
             }
 
-            const reverse = this.sort['direction'] == "DESC"
+            const reverse = (this.sort['direction'] == -1)
             if (col == 0)
-                this.allStocks.sort(this.sortBy('symbol', reverse, (a) =>  a.toUpperCase()))
+                this.allStocks.sort(this.sortBy('symbol', !reverse, (a) =>  a.toUpperCase()))
             if (col == 1)
-                this.allStocks.sort(this.sortBy('name', reverse, (a) =>  a.toUpperCase()))
+                this.allStocks.sort(this.sortBy('name', !reverse, (a) =>  a.toUpperCase()))
             if (col == 2)
                 this.allStocks.sort(this.sortBy('price', reverse, parseFloat))
             if (col == 3)
                 this.allStocks.sort(this.sortBy('market_cap', reverse, parseInt))
             if (col == 4)
                 this.allStocks.sort(this.sortBy('pe_ratio', reverse, parseInt))
+            
+            console.log("sortByCol", col, this.sort['column'], this.sort['direction'])
         }
-    };
+    }
 }
 </script>
 {% endblock%}

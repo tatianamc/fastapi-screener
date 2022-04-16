@@ -54,7 +54,7 @@ def screener_filter(request: Request, filter_data: schemas.FilterIn, db: Session
     
     # Handle sort direction of data
     sql_col_names = models.Stock.__table__.c.keys()
-    if filter_data.sort.direction == "ASC":
+    if filter_data.sort.direction == 1:
         stocks = stocks.order_by(getattr(models.Stock, sql_col_names[filter_data.sort.column]))
     else:
         stocks = stocks.order_by(getattr(models.Stock, sql_col_names[filter_data.sort.column]).desc())

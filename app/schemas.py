@@ -38,7 +38,7 @@ class FilterGroupIn(BaseModel):
 
 class FilterSortIn(BaseModel):
     column: int = 0
-    direction: Literal["ASC", "DESC"]
+    direction: Literal[-1, 1]
 
 
 class FilterIn(BaseModel):
