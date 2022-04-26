@@ -1,28 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
-<div x-data="stockAPI()" x-init="axios.get('/stocks?limit=510').then(res => { allStocks = res.data; });" class="container">
+<div x-data="stockAPI()" x-init="axios.get('/stocks?limit=510').then(res => { allStocks = res.data })" class="container">
     <div class="p-2 border">
-        <p>
-            <strong>Click 'edit' to add filters to selected stocks</strong>
-        </p>
-        <div class="row my-3 g-3 collapse small" id="collapseFilterMenu">
-            <div class="col-12" id="endFilterMenu">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Add Filter by...</button>
-                <ul class="dropdown-menu">
-                    {% for name in sql_cols %}
-                    <li @click="addFilter('{{ name_index[name] }}')">
-                        <a class="dropdown-item"  href="#">{{ name_index[name] }}</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
+        <p><strong>Click "Add Filter By..." to start filtering stocks:</strong></p>
+        <div class="row my-2 g-1 small">
             <template x-for="(filter, index) in filters" :key="index">
                 <div class="input-group d-inline-flex align-items-center w-auto">
                     <span x-text="filter.filter" class="input-group-text"></span>
                     <select class="form-select" aria-label="Select button">
-                        <option x-bind:selected="filter.operator===$el.textContent" @click="filter.operator=$el.textContent">Greater than</option>
-                        <option x-bind:selected="filter.operator===$el.textContent" value="1" @click="filter.operator=$el.textContent">Equal to</option>
-                        <option x-bind:selected="filter.operator===$el.textContent" value="2"@click="filter.operator=$el.textContent">Less than</option>
+                        <option :selected="filter.operator===$el.textContent" @click="filter.operator=$el.textContent">Greater than</option>
+                        <option :selected="filter.operator===$el.textContent" @click="filter.operator=$el.textContent">Equal to</option>
+                        <option :selected="filter.operator===$el.textContent" @click="filter.operator=$el.textContent">Less than</option>
                     </select>
                     <input type="text" class="form-control" aria-label="Text input" x-model="filter.value">
                     <button @click="filters.splice(index, 1)" class="btn btn-outline-danger deleteFilterGroup">X</button>
@@ -30,9 +18,14 @@
             </template>
         </div>
         <div class="col-12">
-            <a class="btn btn-outline-primary" data-bs-toggle="collapse" href="#collapseFilterMenu" role="button" aria-expanded="false" aria-controls="collapseFilterMenu">
-                Edit Filters
-            </a>
+            <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Add Filter by...</button>
+            <ul class="dropdown-menu">
+                {% for name in sql_cols %}
+                <li @click="addFilter('{{ name_index[name] }}')">
+                    <a class="dropdown-item"  href="#">{{ name_index[name] }}</a>
+                </li>
+                {% endfor %}
+            </ul>
             <button id="submitFilters" @click="getStocks(true)" class="btn btn-primary">Apply Filters</button>
         </div>
     </div>
@@ -40,18 +33,21 @@
     <div class="mt-3 table-responsive">
         <table class="table table-hover table-striped table-bordered">
             <thead>
-                <tr><th @click="sortByCol(0)">Symbol</th>
-                    <th @click="sortByCol(1)">Name</th>
-                    <th @click="sortByCol(2)">Price</th>
-                    <th @click="sortByCol(3)">Market cap</th>
-                    <th @click="sortByCol(4)">P/E ratio</th>
+                <tr>
+                    <template x-for="header in headers" :key="header">
+                        <th @click="sortFromEvent"
+                            :class="headers.indexOf(header) === sort['column'] ? 'active'+sort['direction'] : ''"
+                            x-text="header">
+                        </th>
+                    </template>
                 </tr>
             </thead><tbody>
                 <template x-for="stock in allStocks.slice(skip, skip + limit)" :key="stock.symbol">
                     <tr>
                         <td>
                             <strong>
-                                <a x-bind:href="'/priceinfo/'+stock.symbol" target="_blank" rel="noopener noreferrer" x-text="stock.symbol"></a>
+                                <a :href="'/priceinfo/'+stock.symbol" target="_blank" 
+                                    rel="noopener noreferrer" x-text="stock.symbol"></a>
                             </strong>
                         </td>
                         <td x-text="stock.name"></td>
@@ -79,6 +75,7 @@
 function stockAPI() {
     return {
         filters: [],
+        headers: ["Symbol", "Name", "Price", "Market cap", "P/E ratio"],
         limit: 25,
         operators: ["Greater than", "Equal to", "Less than"],
         skip: 0,
@@ -110,7 +107,7 @@ function stockAPI() {
         },
 
         getStocks: async function(resetPage) {
-            // resetPage - return pagination to 0 to avoid empty pages
+            // resetPage - return page count to 0 to avoid empty pages
             if (resetPage) this.skip = 0
             // Replace "B" in Market cap filter with correct n of zeroes
             for (const filter of this.filters) {
@@ -126,11 +123,10 @@ function stockAPI() {
                 "filters": this.filters,
                 "sort": this.sort
             })
-            this.allStocks = response.data.stocks
+            this.allStocks = this.sortByCol(this.sort['column'], response.data.stocks)
         },
 
         sortBy(field, reverse, primer) {
-            console.log("sortBy", reverse, this.sort['column'], this.sort['direction'])
             // Reusable sort function for table columns
             const key = primer ?
                 function(x) {
@@ -141,34 +137,37 @@ function stockAPI() {
                 }
 
             reverse = !reverse ? 1 : -1
-            console.log("sortBy", reverse, this.sort['column'], this.sort['direction'])
             return function(a, b) {
                 return a = key(a), b = key(b), reverse * ((a > b) - (b > a))
             }
         },
 
-        sortByCol(col) {
-            console.log("sortByCol", col, this.sort['column'], this.sort['direction'])
+        sortFromEvent($event) {
+            // Update UI variables 
+            const col = [...$event.target.parentElement.children].indexOf($event.target) -1
             if (this.sort['column'] == col) {
                 this.sort['direction'] = this.sort['direction'] == 1 ? -1 : 1
             } else {
                 this.sort['column'] = col
                 this.sort['direction'] = -1
             }
+            this.sortByCol(col)
+        },
 
-            const reverse = (this.sort['direction'] == -1)
+        sortByCol(col, data = this.allStocks) {
+            // Sort stocks by this.sort criteria
+            const reverse = (this.sort['direction'] === -1)
             if (col == 0)
-                this.allStocks.sort(this.sortBy('symbol', !reverse, (a) =>  a.toUpperCase()))
+                data.sort(this.sortBy('symbol', !reverse, (a) =>  a.toUpperCase()))
             if (col == 1)
-                this.allStocks.sort(this.sortBy('name', !reverse, (a) =>  a.toUpperCase()))
+                data.sort(this.sortBy('name', !reverse, (a) =>  a.toUpperCase()))
             if (col == 2)
-                this.allStocks.sort(this.sortBy('price', reverse, parseFloat))
+                data.sort(this.sortBy('price', reverse, parseFloat))
             if (col == 3)
-                this.allStocks.sort(this.sortBy('market_cap', reverse, parseInt))
+                data.sort(this.sortBy('market_cap', reverse, parseInt))
             if (col == 4)
-                this.allStocks.sort(this.sortBy('pe_ratio', reverse, parseInt))
-            
-            console.log("sortByCol", col, this.sort['column'], this.sort['direction'])
+                data.sort(this.sortBy('pe_ratio', reverse, parseInt))
+            return data
         }
     }
 }

@@ -13,3 +13,21 @@ th, a.page-link {
 th:hover {
     background-color: #F2F2F2;
 }
+
+th.active1, th.active-1 {
+    background-color: #E8E8E8;
+}
+
+th.active1::after, th.active-1::after {
+    color: #666666;
+    text-align: right;
+    float:right;
+}
+
+th.active1::after {
+    content: " ▲";
+}
+
+th.active-1::after {
+    content: " ▼";
+}

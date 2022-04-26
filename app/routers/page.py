@@ -51,14 +51,7 @@ def screener_filter(request: Request, filter_data: schemas.FilterIn, db: Session
             stocks = stocks.filter(getattr(models.Stock, filter_sql) <= filter['value'])
         else:
             stocks = stocks.filter(getattr(models.Stock, filter_sql) == filter['value'])
-    
-    # Handle sort direction of data
-    sql_col_names = models.Stock.__table__.c.keys()
-    if filter_data.sort.direction == 1:
-        stocks = stocks.order_by(getattr(models.Stock, sql_col_names[filter_data.sort.column]))
-    else:
-        stocks = stocks.order_by(getattr(models.Stock, sql_col_names[filter_data.sort.column]).desc())
-    
+        
     stocks = stocks.all()
     
     if not stocks:
