@@ -27,7 +27,7 @@ th.active1::after, th.active-1::after {
 th.active1::after {
     content: " ▲";
 }
-/* Test */
+
 th.active-1::after {
     content: " ▼";
 }
